@@ -1,0 +1,182 @@
+
+*{
+	margin:0px;
+	padding:0px;
+	box-sizing: border-box;
+	font-family: sans-serif;
+	font-size: medium;
+}
+
+
+/* Slideshow container */
+.slideshow-container {
+  max-width: 1000px;
+  position: relative;
+  margin: auto;
+}
+
+/* Hide the images by default */
+.mySlides, .mySlides2, .mySlides3, .mySlides4, .mySlides5{
+  display: none;
+}
+
+.innerPart{
+	text-align:center
+}
+
+@media only screen and (max-width: 900px){
+.innerPart img {
+width: 75vw;
+height: 43vh
+}
+.prev, .next{
+	  margin-top: -30vh;
+}
+}
+
+@media only screen and (min-width: 901px){
+.innerPart img{
+width: 40vw;
+height: 90vh
+}
+.prev, .next{
+	  margin-top: -60vh;
+}
+.prev:hover, .next:hover {
+  background-color: rgba(0,0,0,0.7);
+}
+#remove-button, #remove-button-2, #remove-button-3, #remove-button-4{
+	 position: absolute;
+	 right: 8em
+}
+}
+
+
+/* Next & previous buttons */
+.prev, .next {
+  cursor: pointer;
+  position: absolute;
+  width: auto;
+  padding: 16px;
+  color: white;
+  font-weight: bold;
+  font-size: 30px;
+  text-decoration: none;
+  transition: 0.6s ease;
+  border-radius: 0 3px 3px 0;
+  user-select: none;
+}
+
+#most-viewed div .prev, #most-viewed div .next, #new-releases div .prev, #new-releases div .next{
+	color: black
+}
+
+/* Position the "next button" to the right */
+.next{
+  right: 0;
+  border-radius: 3px 0 0 3px;
+}
+
+
+
+/* Caption text */
+.text {
+  padding: 8px 12px;
+  bottom: 8px;
+  width: 100%;
+  text-align: center;
+  font-weight: bold
+}
+
+
+/* Fading animation */
+.forwardani {
+  animation-name: slide;
+  animation-duration: 1.5s;
+}
+
+.backwardani{
+	animation-name: backslide;
+  animation-duration: 1.5s;
+}
+
+@keyframes slide {
+  from {
+    transform: translateX(-200px);
+    visibility: visible;
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes backslide {
+  from {
+    transform: translateX(200px);
+    visibility: visible;
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}
+
+.removing, .removing2, .removing3, .removing4{
+	display: none;
+	text-align: center
+}
+
+#err1, #err2, #err3, #err4{
+	color: red;
+	display: none
+}
+
+section{
+	margin-bottom: 3vh
+}
+#head-title, .book-title{
+	font-weight: bold;
+	text-align: center
+}
+#head-title span, #head-title u{
+	font-weight: bold;
+	font-size: 1em;
+	color: #008040
+}
+#head-title h2{
+	color: #008040
+}
+.mainContainer{
+	background-color: #c0c0c0
+}
+#hot-topics{
+	background-color: #008040;
+	color: #fddbb4
+}
+
+#most-viewed{
+	background-color: #fddbb4;
+	color: #008040
+}
+
+#latest{
+	background-color: #008040;
+	color: #fddbb4
+}
+
+#new-releases{
+	background-color: #fddbb4;
+	color: #008040
+}
+
+#allbooks{
+	background-color: #008040;
+	color: #fddbb4
+}
+
+.foot{
+	background-color: #c0c0c0
+}
+
+
