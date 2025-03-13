@@ -1,0 +1,281 @@
+﻿@page "/book/{BookName}"
+@using Microsoft.AspNetCore.Identity
+@inject UserManager<ApplicationUser> UserManager
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject ApplicationDbContext DbContext
+@inject AuthenticationStateProvider AuthProvider
+@using BookParadise.Data
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.Forms
+
+@code {
+    [Parameter] public string BookName { get; set; }
+    private Book book;
+    private List<Comment> comments;
+    private string bookmarkStatus = "No";
+    private ApplicationUser currentUser;
+    private bool isAdmin;
+
+    private IBrowserFile uploadedChapter; 
+    private string newComment = ""; 
+    private string newReply = ""; 
+    private Dictionary<int, bool> replyVisibility = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity.IsAuthenticated)
+        {
+            currentUser = await UserManager.GetUserAsync(user);
+            isAdmin = await UserManager.IsInRoleAsync(currentUser, "Role_Admin");
+        }
+
+        book = await Http.GetFromJsonAsync<Book>($"api/BookController/GetBook/{BookName}");
+        comments = await Http.GetFromJsonAsync<List<Comment>>($"api/BookController/GetComments/{BookName}");
+
+        if (currentUser != null)
+        {
+            bookmarkStatus = await Http.GetFromJsonAsync<bool>($"api/BookController/IsBookmarked/{BookName}") ? "Yes" : "No";
+        }
+    }
+
+    private async Task AddBookmark()
+    {
+        if (currentUser != null)
+        {
+            var bookList = new List<string> { BookName };
+            var response = await Http.PostAsJsonAsync($"api/BookController/add-bookmarks?userEmail={currentUser.Email}", bookList);
+
+            if (response.IsSuccessStatusCode)
+            {
+                bookmarkStatus = "Yes";
+            }
+        }
+    }
+
+    private async Task RemoveBookmark()
+    {
+        if (currentUser != null)
+        {
+            var response = await Http.DeleteAsync($"api/BookController/delete-bookmark?bookName={BookName}&userEmail={currentUser.Email}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                bookmarkStatus = "No";
+            }
+        }
+    }
+
+    private async Task UploadChapter()
+    {
+        if (uploadedChapter != null)
+        {
+            var content = new MultipartFormDataContent();
+            var stream = uploadedChapter.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
+            content.Add(new StreamContent(stream), "newChapter", uploadedChapter.Name);
+            content.Add(new StringContent(BookName), "bookName");
+
+            var response = await Http.PostAsync("api/BookController/upload-chapter", content);
+
+            if (response.IsSuccessStatusCode)
+            {
+                Navigation.NavigateTo($"/book/{BookName}", forceLoad: true);
+            }
+        }
+        else
+        {
+            Console.WriteLine("No file selected.");
+        }
+    }
+
+
+    private void ShowReplies(int commentId)
+    {
+        if (replyVisibility.ContainsKey(commentId))
+        {
+            replyVisibility[commentId] = !replyVisibility[commentId];
+        }
+        else
+        {
+            replyVisibility[commentId] = true;
+        }
+    }
+
+    private async Task DeleteComment(long commentId)
+    {
+        var response = await Http.DeleteAsync($"api/BookController/DeleteComment?commentId={commentId}&type='comment'");
+        if (response.IsSuccessStatusCode)
+        {
+            comments.RemoveAll(c => c.Id == commentId);
+        }
+    }
+
+    private async Task DeleteReply(long replyId)
+    {
+        var response = await Http.DeleteAsync($"api/BookController/DeleteComment?commentId={replyId}&type='reply'");
+        if (response.IsSuccessStatusCode)
+        {
+            foreach (var comment in comments)
+            {
+                comment.Replies.RemoveAll(r => r.Id == replyId);
+            }
+        }
+    }
+
+    private async Task PostComment()
+    {
+        if (!string.IsNullOrWhiteSpace(newComment))
+        {
+            var response = await Http.PostAsJsonAsync("api/BookController/PostComment", new
+            {
+                UserId = currentUser.Id,
+                BookName = BookName,
+                CommentBody = newComment
+            });
+
+            if (response.IsSuccessStatusCode)
+            {
+                newComment = "";
+                comments = await Http.GetFromJsonAsync<List<Comment>>($"api/BookController/GetComments/{BookName}");
+            }
+        }
+    }
+
+    private async Task PostReply(long commentId)
+    {
+        if (!string.IsNullOrWhiteSpace(newReply))
+        {
+            var response = await Http.PostAsJsonAsync("api/BookController/PostReply", new
+            {
+                UserId = currentUser.Id,
+                CommentId = commentId,
+                ReplyBody = newReply
+            });
+
+            if (response.IsSuccessStatusCode)
+            {
+                newReply = "";
+                comments = await Http.GetFromJsonAsync<List<Comment>>($"api/BookController/GetComments/{BookName}");
+            }
+        }
+    }
+}
+
+<head>
+    <title>Book Paradise</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/js/all.min.js"></script>
+    <link href="/style/comments.css" rel="stylesheet">
+    <script src="/script/upload-valid.js"></script>
+    <script src="/script/show-replies.js"></script>
+</head>
+
+<HeadSection />
+<section>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="cover text-center">
+                <img src="/cover images/@book.BookName-cover image.jpg" alt="Book Cover">
+                <h1>@book.BookName</h1>
+            </div>
+            <div class="info-panel text-center">
+                <h3>Author(s)</h3>
+                <p>@book.Author</p>
+                <h3>Translator(s)</h3>
+                <p>@book.Translators</p>
+                <h3>Genre</h3>
+                <p>@book.Genre</p>
+                <h3>Tags</h3>
+                <p>@book.Tags</p>
+                <h3>Chapters</h3>
+                @foreach (var chapter in book.Chapters)
+                {
+                    <p><a href="/read-chapter?chapterName=@chapter.Name" class="chapter-link">@chapter.Name</a></p>
+                }
+
+                @if (currentUser != null)
+                {
+                    @if (bookmarkStatus == "No")
+                    {
+                        <button class="btn btn-warning" @onclick="AddBookmark">Add to Bookmarks</button>
+                    }
+                    else
+                    {
+                        <button class="btn btn-danger" @onclick="RemoveBookmark">Remove from Bookmarks</button>
+                    }
+
+                    @if (isAdmin)
+                    {
+                        <br>
+                        <br>
+                        <InputFile OnChange="e => uploadedChapter = e.File" />
+                        <button class="btn btn-warning" @onclick="UploadChapter">Add Chapter</button>
+                        <br>
+                        <div id="err" style="display:none">Please upload a chapter.</div>
+                    }
+                }
+            </div>
+
+            <div id="comment-box" class="container">
+                <h2>Comments</h2>
+                @if (comments.Count == 0)
+                {
+                    <div>There are no comments yet.</div>
+                }
+                else
+                {
+                    @foreach (var comment in comments)
+                    {
+                        <div class="comment">
+                            <div class="comment-author">@comment.User.FullName</div>
+                            <div class="comment-date">@comment.CreatedDate</div>
+                            <div class="comment-text">@comment.CommentBody</div><br>
+                            <button class="btn btn-primary" @onclick="() => ShowReplies((int)comment.Id)">Replies <i class="fas fa-bars"></i></button>
+
+                            @if (currentUser?.Email == comment.User.Email)
+                            {
+                                <button class="btn btn-danger" @onclick="() => DeleteComment(comment.Id)">Delete Comment</button>
+                            }
+
+                            <div class="reply-box" id="reply-@comment.Id" style="display: @(replyVisibility.ContainsKey((int)comment.Id) && replyVisibility[(int)comment.Id] ? "block" : "none")">
+                                @foreach (var reply in comment.Replies)
+                                {
+                                    <div class="reply">
+                                        <div class="reply-author">@reply.User.FullName</div>
+                                        <div class="reply-date">@reply.CreatedDate</div>
+                                        <div class="reply-text">@reply.ReplyBody</div>
+
+                                        @if (currentUser?.Email == reply.User.Email)
+                                        {
+                                            <button class="btn btn-danger" @onclick="() => DeleteReply(reply.Id)">Delete Reply</button>
+                                        }
+                                    </div>
+                                }
+
+                                @if (currentUser != null)
+                                {
+                                    <br>
+                                    <textarea @bind="newReply" placeholder="Write a reply..."></textarea>
+                                    <button class="btn btn-warning" @onclick="() => PostReply(comment.Id)"><i class="fas fa-paper-plane"></i></button>
+                                }
+                            </div>
+                        </div>
+                    }
+                }
+
+                @if (currentUser != null)
+                {
+                    <br>
+                    <textarea @bind="newComment" placeholder="Write a comment..."></textarea>
+                    <button class="btn btn-primary" @onclick="PostComment"><i class="fas fa-paper-plane"></i></button>
+                }
+            </div>
+        </div>
+    </div>
+</section>
+<FooterSection />

@@ -1,0 +1,153 @@
+﻿@page "/bookmarks"
+@inject NavigationManager NavManager
+@inject AuthenticationStateProvider AuthProvider
+@inject UserManager<ApplicationUser> UserManager
+@inject ApplicationDbContext _context
+
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@using Microsoft.EntityFrameworkCore;
+@using Microsoft.AspNetCore.Identity
+@using BookParadise.Data
+
+@code {
+    private ICollection<Book> bookmarks;
+    private List<string> genres = new();
+    private string currentGenre = "All Genres";
+    private bool showDeleteButtons = false;
+    private ApplicationUser appUser;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated ?? false)
+        {
+            appUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == user.Identity.Name);
+            bookmarks = appUser.Bookmarks;
+            genres = bookmarks.Select(b => b.Genre).Distinct().ToList();
+        }
+    }
+
+    private async Task ChangeGenre(ChangeEventArgs e)
+    {
+        currentGenre = e.Value?.ToString() ?? "All Genres";
+        if (currentGenre == "All Genres")
+        {
+            bookmarks = appUser?.Bookmarks.ToList() ?? new();
+        }
+        else
+        {
+            bookmarks = appUser?.Bookmarks.Where(b => b.Genre == currentGenre).ToList() ?? new();
+        }
+    }
+
+    private async Task DeleteBookmark(string bookName)
+    {
+        if (appUser != null)
+        {
+            var bookmarkToRemove = appUser.Bookmarks.FirstOrDefault(b => b.BookName == bookName);
+            if (bookmarkToRemove != null)
+            {
+                appUser.Bookmarks.Remove(bookmarkToRemove);
+                bookmarks.Remove(bookmarkToRemove);
+
+                _context.Users.Update(appUser);
+                await _context.SaveChangesAsync();
+            }
+        }
+    }
+}
+
+<head>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/script/genre.js"></script>
+    <script src="/script/edit-books.js"></script>
+    <title>Book Paradise</title>
+    <style>
+
+        img {
+            width: 70%;
+            height: 70%
+        }
+
+        .footer {
+            float: none
+        }
+
+        .heading {
+            color: #008040;
+            padding: 2vh
+        }
+
+        .deleting {
+            display: none;
+            text-align: center
+        }
+
+        #cancel-button {
+            display: none
+        }
+
+        .empty-mes {
+            color: red;
+            text-align: center
+        }
+    </style>
+</head>
+
+<HeadSection />
+<div class="heading row">
+<h1 class="col-lg-6 col-sm-12">All Your Bookmarks</h1>
+
+@if (!string.IsNullOrEmpty(currentGenre) && currentGenre != "All Genres")
+{
+    <h2 class="text-primary text-center">Showing bookmarks for "@currentGenre"</h2>
+}
+
+<div class="form-inline col-12">
+    <select class="form-select w-25 d-inline" @onchange="ChangeGenre">
+        <option value="All Genres">All Genres</option>
+        @foreach (var genre in genres)
+        {
+            <option value="@genre">@genre</option>
+        }
+    </select>
+</div>
+</div>
+
+@if (bookmarks.Count == 0)
+{
+    <h2 class="text-danger text-center">You have no bookmarks.</h2>
+}
+else
+{
+    <div class="row">
+        @foreach (var bookmark in bookmarks)
+        {
+            <div class="col-lg-3 col-md-4 col-sm-6 text-center">
+                <a href="/view-book?bookName=@bookmark.BookName">
+                    <img src="/cover_images/@(bookmark.BookName)-cover.jpg" class="img-fluid" alt="Cover Image">
+                </a>
+                <div class="fw-bold mt-2">@bookmark.BookName</div>
+
+                @if (showDeleteButtons)
+                {
+                    <button class="btn btn-danger mt-2" @onclick="() => DeleteBookmark(bookmark.BookName)">Delete</button>
+                }
+            </div>
+        }
+    </div>
+}
+
+
+    <div class="text-center mt-4">
+        <a class="btn btn-success" href="/view-all-books">Add Bookmark</a>
+        <button class="btn btn-danger" @onclick="() => showDeleteButtons = true">Delete Bookmark</button>
+        <button class="btn btn-primary" @onclick="() => showDeleteButtons = false">Cancel</button>
+    </div>
+
+<FooterSection />
+

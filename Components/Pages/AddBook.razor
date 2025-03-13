@@ -1,0 +1,137 @@
+﻿@page "/add-book"
+@using BookParadise.Data
+@inject HttpClient Http
+
+@code {
+    private BookModel bookModel = new();
+    private IBrowserFile coverImage;
+    private IBrowserFile firstChapter;
+    private IBrowserFile secondChapter;
+    private IBrowserFile thirdChapter;
+
+    private async Task LoadCoverImage(InputFileChangeEventArgs e)
+    {
+        coverImage = e.File;
+    }
+
+    private async Task LoadFirstChapter(InputFileChangeEventArgs e)
+    {
+        firstChapter = e.File;
+    }
+
+    private async Task LoadSecondChapter(InputFileChangeEventArgs e)
+    {
+        secondChapter = e.File;
+    }
+
+    private async Task LoadThirdChapter(InputFileChangeEventArgs e)
+    {
+        thirdChapter = e.File;
+    }
+
+    private async Task SaveBook()
+    {
+        var content = new MultipartFormDataContent();
+        content.Add(new StringContent(bookModel.BookName), "bookName");
+        content.Add(new StringContent(bookModel.Genre), "genre");
+        content.Add(new StringContent(bookModel.Author), "author");
+        content.Add(new StringContent(bookModel.Translators), "translators");
+        content.Add(new StringContent(bookModel.Tags), "tags");
+
+        if (coverImage != null)
+            content.Add(new StreamContent(coverImage.OpenReadStream()), "coverImage", coverImage.Name);
+        if (firstChapter != null)
+            content.Add(new StreamContent(firstChapter.OpenReadStream()), "firstChapter", firstChapter.Name);
+        if (secondChapter != null)
+            content.Add(new StreamContent(secondChapter.OpenReadStream()), "secondChapter", secondChapter.Name);
+        if (thirdChapter != null)
+            content.Add(new StreamContent(thirdChapter.OpenReadStream()), "thirdChapter", thirdChapter.Name);
+
+        var response = await Http.PostAsync("/upload-book", content);
+        if (response.IsSuccessStatusCode)
+        {
+            // Handle success (e.g., show a message or redirect)
+        }
+    }
+
+    private class BookModel
+    {
+        public string BookName { get; set; }
+        public string Genre { get; set; }
+        public string Author { get; set; }
+        public string Translators { get; set; }
+        public string Tags { get; set; }
+    }
+
+}
+
+<head>
+    <title>Book Paradise</title>
+    <link href="https://fonts.googleapis.com/css?family=Lato"
+          rel="stylesheet" type="text/css">
+    <link href="https://fonts.googleapis.com/css?family=Montserrat"
+          rel="stylesheet" type="text/css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script src="/script/upload-valid.js"></script>
+</head>
+
+<HeadSection />
+
+<h2 class="text-center my-5">Add a book to Book Paradise!</h2>
+
+<div class="container text-center my-5" style="background-color: rgba(68, 150, 61, 0.5);">
+    <EditForm Model="bookModel" OnValidSubmit="SaveBook">
+        <DataAnnotationsValidator />
+        
+        <div class="form-group">
+            <label for="bookName">Book Name:</label>
+            <InputText id="bookName" @bind-Value="bookModel.BookName" class="form-control" />
+        </div>
+        <br>
+        
+        <div class="form-group">
+            <label for="genre">Genre:</label>
+            <InputText id="genre" @bind-Value="bookModel.Genre" class="form-control" />
+        </div>
+        <br>
+        
+        <div class="form-group">
+            <label for="author">Authors:</label>
+            <InputText id="author" @bind-Value="bookModel.Author" class="form-control" />
+        </div>
+        <br>
+        
+        <div class="form-group">
+            <label for="translators">Translators:</label>
+            <InputText id="translators" @bind-Value="bookModel.Translators" class="form-control" />
+        </div>
+        <br>
+        
+        <div class="form-group">
+            <label for="tags">Tags:</label>
+            <InputText id="tags" @bind-Value="bookModel.Tags" class="form-control" />
+        </div>
+        <br>
+        
+        <div class="form-group">
+            <label for="coverImage">Upload Cover Image:</label>
+            <InputFile id="coverImage" OnChange="LoadCoverImage" />
+        </div>
+        <br>
+        
+        <div class="form-group">
+            <label>Upload Chapters:</label><br>
+            <InputFile OnChange="LoadFirstChapter" /> First Chapter <br>
+            <InputFile OnChange="LoadSecondChapter" /> Second Chapter <br>
+            <InputFile OnChange="LoadThirdChapter" /> Third Chapter <br>
+        </div>
+        <br>
+        
+        <div class="form-group">
+            <button type="submit" class="btn btn-primary">Save Book</button>
+        </div>
+    </EditForm>
+</div>
+<FooterSection />

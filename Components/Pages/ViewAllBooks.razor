@@ -1,0 +1,177 @@
+﻿@page "/all-books"
+@using Microsoft.AspNetCore.Identity
+@inject NavigationManager Navigation
+@inject UserManager<ApplicationUser> UserManager
+@inject BookParadise.Data.ApplicationDbContext _context
+@using BookParadise.Data
+@using Microsoft.EntityFrameworkCore;
+@inject AuthenticationStateProvider AuthProvider
+@inject HttpClient Http
+
+
+@code {
+    private List<Book> Books { get; set; } = new();
+    private List<string> Genres { get; set; } = new();
+    private string CurrentGenre { get; set; } = "All Genres";
+    private Dictionary<string, bool> SelectedBookmarks { get; set; } = new();
+    private bool ShowBookmarking { get; set; } = false;
+    private bool ShowDeleting { get; set; } = false;
+    private String UserEmail;
+    private bool isAuth;
+    private bool isAdmin;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Books = await _context.Books.ToListAsync();
+        Genres = await _context.Books.Select(b => b.Genre).Distinct().ToListAsync();
+        var authState = await AuthProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (user != null && user.Identity.IsAuthenticated)
+        {
+            var currentUser = await UserManager.GetUserAsync(user);
+            UserEmail = currentUser?.Email ?? string.Empty;
+            isAuth = true;
+            isAdmin = await UserManager.IsInRoleAsync(currentUser, "Role_Admin");
+        }
+
+        var userBookmarks = await _context.Users
+                .Where(u => u.Email == UserEmail)
+                .SelectMany(u => u.Bookmarks)
+                .Select(b => b.BookName)
+                .ToListAsync();
+        foreach (var bookmark in userBookmarks)
+        {
+            SelectedBookmarks[bookmark] = true;
+        }
+    }
+
+    private void ChangeGenre(ChangeEventArgs e)
+    {
+        CurrentGenre = e.Value.ToString();
+        Books = _context.Books.Where(b => b.Genre == CurrentGenre || CurrentGenre == "All Genres").ToList();
+    }
+
+    private void ToggleBookmarkForm() => ShowBookmarking = !ShowBookmarking;
+    private void ToggleDeleteButtons() => ShowDeleting = !ShowDeleting;
+
+    private async Task AddBookmarks()
+    {
+        var selectedBooks = SelectedBookmarks.Where(x => x.Value).Select(x => x.Key).ToList();
+        if (selectedBooks.Any())
+        {
+            var request = new HttpRequestMessage(HttpMethod.Post, $"/add-bookmarks?userEmail={UserEmail}")
+                {
+                    Content = JsonContent.Create(selectedBooks)
+                };
+            var response = await Http.SendAsync(request);
+            if (response.IsSuccessStatusCode)
+            {
+                SelectedBookmarks.Clear();
+            }
+        }
+    }
+
+    private async Task DeleteBook(string bookName)
+    {
+        var book = await _context.Books.FirstOrDefaultAsync(b => b.BookName == bookName);
+        if (book != null)
+        {
+            _context.Books.Remove(book);
+            await _context.SaveChangesAsync();
+            Books.Remove(book);
+        }
+    }
+}
+<head>
+    <title>Book Paradise</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/script/genre.js"></script>
+    <script src="/script/edit-books.js"></script>
+    <style>
+
+        img {
+            width: 70%;
+            height: 70%
+        }
+
+        .footer {
+            float: none
+        }
+
+        .heading {
+            color: #008040;
+            padding: 2vh
+        }
+
+        .deleting, .bookmarking {
+            display: none;
+            text-align: center
+        }
+
+        #cancel-button, form .bookmark-button {
+            display: none
+        }
+    </style>
+</head>
+
+<HeadSection />
+<h1>All Books</h1>
+@if (CurrentGenre != "All Genres")
+{
+    <h2>Showing all the books for "@CurrentGenre"</h2>
+}
+
+<select class"form-inline col-12" @onchange="ChangeGenre">
+    <option value="All Genres">All Genres</option>
+    @foreach (var genre in Genres)
+    {
+        <option value="@genre">@genre</option>
+    }
+</select>
+
+<form @onsubmit="AddBookmarks">
+    <div class="row">
+        @foreach (var book in Books)
+        {
+            <div class="col-lg-3 col-sm-4 col-6">
+                <a href="/view-book?bookName=@book.BookName">
+                    <img class="col-12" src="/cover images/@book.BookName-cover image.jpg" alt="image" width="600" height="400">
+                </a>
+                <div style="padding: 15px; text-align: center; font-weight: bold">@book.BookName</div>
+
+                @if (ShowBookmarking)
+                {
+                    <input type="checkbox" @bind="SelectedBookmarks[book.BookName]" style="width: 30px; height: 30px">
+                }
+
+                @if (ShowDeleting)
+                {
+                    <button class="btn btn-danger" @onclick="() => DeleteBook(book.BookName)">Delete</button>
+                }
+            </div>
+        }
+    </div>
+
+    @if (ShowBookmarking)
+    {
+        <button type="submit" class="btn btn-primary">Add</button>
+        <button type="button" class="btn btn-danger" @onclick="ToggleBookmarkForm">Cancel</button>
+    }
+</form>
+
+
+@if (isAuth)
+{
+    <button class="btn btn-success" @onclick="ToggleBookmarkForm">Add Bookmarks</button>
+}
+
+@if (isAdmin)
+{
+   
+    <a class="btn btn-success" href="/add-book">Add Book</a>
+    <button class="btn btn-danger" @onclick="ToggleDeleteButtons">Delete Books</button>
+    <button class="btn btn-primary" @onclick="ToggleDeleteButtons">Cancel</button>
+}
+
+<FooterSection />
