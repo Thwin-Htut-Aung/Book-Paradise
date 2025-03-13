@@ -1,0 +1,40 @@
+#pp{
+	width: 100%;
+	min-height: 100vh;
+	background-color: #ddd;
+}
+.papers {
+  margin: 0 50px;
+  padding: 0;
+  column-count: 3;
+  column-gap: 30px;
+  column-rule: 3px groove green;
+  /* background-image: url(https://bixswnedu.com/wp-content/uploads/2020/11/privacy-and-policy.png); */
+}
+.papers h1,
+h2, img[src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTbBs6G8n9_sEB68ztZQ2Whd6wYMtb8YiKG0A&usqp=CAU"] {
+  column-span: all;
+  margin-top: 7px !important;
+  margin-bottom: 7px !important;
+  text-align: center;
+  align-items: center;
+}
+.papers p {
+  font-size: 1.2rem;
+  text-transform: lowercase;  
+}
+.papers h2
+{
+  font-size: 1.3rem;
+}
+.papers h1 {
+  font-size: 1.8rem;
+}
+.papers img {
+  margin-top: 15px !important;
+  margin-bottom: 15px !important;
+  border-radius: 50%;
+}
+/* img[src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTbBs6G8n9_sEB68ztZQ2Whd6wYMtb8YiKG0A&usqp=CAU"]{
+	
+} */

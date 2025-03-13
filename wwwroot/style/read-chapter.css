@@ -1,0 +1,31 @@
+﻿
+
+@media only screen and (max-width: 600px) {
+    img
+
+{
+    width: 80vw;
+    height: 60vh
+}
+
+}
+
+@media only screen and (min-width: 601px) {
+    img {
+        width: 60vw;
+        height: 160vh
+    }
+}
+
+img {
+    margin-bottom: 10px
+}
+
+.pages {
+    text-align: center;
+    background-color: #008040
+}
+
+.foot {
+    background-color: #008040
+}

@@ -1,0 +1,80 @@
+ /* Style the whole comment box */
+
+#comment-box {
+        margin-top: 20px;
+        padding: 10px;
+        color: #008040;
+        font-weight: bold;
+        background-color: #fddbb4;
+        text-align: center
+      }
+
+
+      /* Style the comments */
+      .comment {
+        margin-top: 10px;
+        padding: 10px;
+        border: 3px solid #008040;
+        font-size: 20px;
+        text-align: justify
+      }
+
+      /* Style the comment author */
+      .comment-author {
+        margin-bottom: 5px;
+      }
+
+      /* Style the comment date */
+      .comment-date {
+        font-size: 16px;
+        color: #666;
+        margin-bottom: 5px;
+      }
+
+      /* Style the comment text */
+      .comment-text {
+        margin-top: 5px;
+        font-weight: normal
+      }
+	    
+	    #comment-area {
+	    width: 70vw
+	  }
+	  
+	  
+      /* Style the reply box in a similar way */
+      .reply-box {
+        margin-top: 10px;
+        padding: 8px;
+        background-color: #008040;
+        color: #fddbb4;
+        overflow: hidden;
+  	    transition: 0.4s ease-out;
+        max-height: 0;
+        display: none
+      }
+      
+      .reply {
+        margin-top: 10px;
+        padding: 10px;
+        font-size: 16px;
+        border: solid 3px #fddbb4;
+        text-align: justify
+      }
+
+      .reply-date {
+        font-size: 12px;
+        color: white;
+      }
+
+      .reply-text {
+        font-weight: normal
+      }
+      
+      #write-replies{
+      font-size: 16px
+      }
+	    
+	    #reply-area {
+	    width: 60vw
+	  }
